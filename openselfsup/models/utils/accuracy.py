@@ -1,5 +1,6 @@
+import torch
 import torch.nn as nn
-
+from sklearn.metrics import roc_auc_score
 
 def accuracy(pred, target, topk=1):
     assert isinstance(topk, (int, tuple))
@@ -20,6 +21,18 @@ def accuracy(pred, target, topk=1):
         res.append(correct_k.mul_(100.0 / pred.size(0)))
     return res[0] if return_single else res
 
+def auroc(pred, target):
+    outAUROC = torch.zeros(pred.shape[1])
+    
+    datanpGT = target.detach().cpu().numpy()
+    datanpPRED = pred.detach().cpu().numpy()
+    
+    for i in range(pred.shape[1]):
+        try:
+            outAUROC[i] = roc_auc_score(datanpGT[:, i], datanpPRED[:, i])
+        except ValueError:
+            pass
+    return outAUROC.cuda()
 
 class Accuracy(nn.Module):
 

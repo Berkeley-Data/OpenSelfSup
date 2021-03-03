@@ -9,6 +9,13 @@ from detectron2.engine import DefaultTrainer, default_argument_parser, default_s
 from detectron2.evaluation import COCOEvaluator, PascalVOCDetectionEvaluator
 from detectron2.layers import get_norm
 from detectron2.modeling.roi_heads import ROI_HEADS_REGISTRY, Res5ROIHeads
+from detectron2.data.datasets import register_coco_instances
+
+# Example registry
+# register_coco_instances("xview_train", {}, "/shared/laielli/Xview/coco_complete_512/xview_coco_complete_v1_train_512.json", "datasets/xview/xview_train")
+# register_coco_instances("xview_val", {}, "datasets/xview/xview_coco_complete_v1_val_512.json", "datasets/xview/xview_val")
+register_coco_instances("bdd_train", {}, "datasets/bdd/det_v2_train_release_coco_train.json", "datasets/bdd/images/100k/train")
+register_coco_instances("bdd_val", {}, "datasets/bdd/det_v2_val_release_coco_train.json", "datasets/bdd/images/100k/val")
 
 
 @ROI_HEADS_REGISTRY.register()
@@ -32,11 +39,10 @@ class Trainer(DefaultTrainer):
     def build_evaluator(cls, cfg, dataset_name, output_folder=None):
         if output_folder is None:
             output_folder = os.path.join(cfg.OUTPUT_DIR, "inference")
-        if "coco" in dataset_name:
-            return COCOEvaluator(dataset_name, cfg, True, output_folder)
-        else:
-            assert "voc" in dataset_name
+        if "voc" in dataset_name:
             return PascalVOCDetectionEvaluator(dataset_name)
+        else:
+            return COCOEvaluator(dataset_name, cfg, True, output_folder)
 
 
 def setup(args):
@@ -66,6 +72,7 @@ def main(args):
 
 if __name__ == "__main__":
     args = default_argument_parser().parse_args()
+    
     print("Command Line Args:", args)
     launch(
         main,

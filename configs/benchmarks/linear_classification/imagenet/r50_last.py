@@ -17,8 +17,8 @@ model = dict(
 # dataset settings
 data_source_cfg = dict(
     type='ImageNet',
-    memcached=True,
-    mclient_path='/mnt/lustre/share/memcached_client')
+    memcached=False,
+    mclient_path='/ignore')
 data_train_list = 'data/imagenet/meta/train_labeled.txt'
 data_train_root = 'data/imagenet/train'
 data_test_list = 'data/imagenet/meta/val_labeled.txt'

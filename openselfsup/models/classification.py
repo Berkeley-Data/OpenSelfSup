@@ -7,10 +7,10 @@ from openselfsup.utils import print_log
 from . import builder
 from .registry import MODELS
 from .utils import Sobel
-
+from .moco import BaseModel
 
 @MODELS.register_module
-class Classification(nn.Module):
+class Classification(BaseModel):
     """Simple image classification.
 
     Args:

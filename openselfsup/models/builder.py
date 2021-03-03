@@ -1,4 +1,5 @@
 from torch import nn
+from torch import randn
 
 from openselfsup.utils import build_from_cfg
 from .registry import (BACKBONES, MODELS, NECKS, HEADS, MEMORIES, LOSSES)
@@ -17,6 +18,22 @@ def build(cfg, registry, default_args=None):
     Returns:
         nn.Module: A built nn module.
     """
+
+    # ugly hack to __automagically__ set the neck input
+    if cfg.get("neck") and cfg.get("neck").get("auto_channels"):
+        del cfg["neck"]["auto_channels"]
+        # build the backbone to obtain the number of channels
+        bbone = build_backbone(cfg['backbone'])
+        x = randn(1, cfg['backbone']['in_channels'], 224, 224) # 224 doesn't really matter here
+        outp = bbone(x)
+        if isinstance(outp, tuple):
+            outp = outp[0]
+        outsize = outp.shape[1]
+        del bbone, x
+        cfg["neck"]["in_channels"] = outsize
+        if cfg['neck']['type'].find('NonLinear') > -1:
+            cfg["neck"]["hid_channels"] = outsize
+    
     if isinstance(cfg, list):
         modules = [
             build_from_cfg(cfg_, registry, default_args) for cfg_ in cfg

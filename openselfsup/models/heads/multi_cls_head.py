@@ -19,14 +19,18 @@ class MultiClsHead(nn.Module):
                  with_last_layer_unpool=False,
                  backbone='resnet50',
                  norm_cfg=dict(type='BN'),
-                 num_classes=1000):
+                 num_classes=1000,
+                 use_bce_loss=False):
         super(MultiClsHead, self).__init__()
         assert norm_cfg['type'] in ['BN', 'SyncBN', 'GN', 'null']
 
         self.with_last_layer_unpool = with_last_layer_unpool
         self.with_norm = norm_cfg['type'] != 'null'
 
-        self.criterion = nn.CrossEntropyLoss()
+        if use_bce_loss:
+            self.criterion = nn.BCELoss()
+        else:
+            self.criterion = nn.CrossEntropyLoss()
 
         self.multi_pooling = MultiPooling(pool_type, in_indices, backbone)
 

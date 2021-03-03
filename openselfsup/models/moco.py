@@ -1,14 +1,81 @@
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
-
+import torch.distributed as dist
 from openselfsup.utils import print_log
 
 from . import builder
 from .registry import MODELS
 
+# TODO(cjrd) use this across all classes?
+
+
+class BaseModel(nn.Module):
+    def __init__(self):
+        super(BaseModel, self).__init__()
+        self.debug = False
+
+    def set_debug(self):
+        self.debug = True
+
+    def train_step(self, data, optimizer, **kwargs):
+        losses = self(**data)
+        loss, log_vars = self._parse_losses(losses)
+        outputs = dict(loss=loss, log_vars=log_vars,
+                       num_samples=len(data['img'].data))
+        return outputs
+
+    def eval_step(self, data, optimizer, **kwargs):
+        losses = self(**data)
+        loss, log_vars = self._parse_losses(losses)
+        outputs = dict(loss=loss, log_vars=log_vars,
+                       num_samples=len(data['img'].data))
+        return outputs
+
+    def val(self, data, optimizer, **kwargs):
+        losses = self(**data)
+        loss, log_vars = self._parse_losses(losses)
+        outputs = dict(loss=loss, log_vars=log_vars,
+                       num_samples=len(data['img'].data))
+        return outputs
+
+    def _parse_losses(self, losses):
+        """Parse the raw outputs (losses) of the network.
+        Args:
+            losses (dict): Raw output of the network, which usually contain
+                losses and other necessary infomation.
+        Returns:
+            tuple[Tensor, dict]: (loss, log_vars), loss is the loss tensor \
+                which may be a weighted sum of all losses, log_vars contains \
+                all the variables to be sent to the logger.
+        """
+        log_vars = OrderedDict()
+        for loss_name, loss_value in losses.items():
+            if isinstance(loss_value, torch.Tensor):
+                log_vars[loss_name] = loss_value.mean()
+            elif isinstance(loss_value, list):
+                log_vars[loss_name] = sum(_loss.mean() for _loss in loss_value)
+            else:
+                raise TypeError(
+                    f'{loss_name} is not a tensor or list of tensors')
+
+        loss = sum(_value for _key, _value in log_vars.items()
+                   if 'loss' in _key)
+
+        log_vars['loss'] = loss
+        for loss_name, loss_value in log_vars.items():
+            # reduce loss when distributed training
+            if dist.is_available() and dist.is_initialized():
+                loss_value = loss_value.data.clone()
+                dist.all_reduce(loss_value.div_(dist.get_world_size()))
+            log_vars[loss_name] = loss_value.item()
+
+        return loss, log_vars
+
 
 @MODELS.register_module
-class MOCO(nn.Module):
+class MOCO(BaseModel):
     """MOCO.
 
     Implementation of "Momentum Contrast for Unsupervised Visual
@@ -78,13 +145,14 @@ class MOCO(nn.Module):
         for param_q, param_k in zip(self.encoder_q.parameters(),
                                     self.encoder_k.parameters()):
             param_k.data = param_k.data * self.momentum + \
-                           param_q.data * (1. - self.momentum)
+                param_q.data * (1. - self.momentum)
 
     @torch.no_grad()
     def _dequeue_and_enqueue(self, keys):
         """Update queue."""
         # gather keys before updating queue
-        keys = concat_all_gather(keys)
+        if not self.debug:
+            keys = concat_all_gather(keys)
 
         batch_size = keys.shape[0]
 
@@ -167,13 +235,15 @@ class MOCO(nn.Module):
             self._momentum_update_key_encoder()  # update the key encoder
 
             # shuffle for making use of BN
-            im_k, idx_unshuffle = self._batch_shuffle_ddp(im_k)
+            if not self.debug:
+                im_k, idx_unshuffle = self._batch_shuffle_ddp(im_k)
 
             k = self.encoder_k(im_k)[0]  # keys: NxC
             k = nn.functional.normalize(k, dim=1)
 
             # undo shuffle
-            k = self._batch_unshuffle_ddp(k, idx_unshuffle)
+            if not self.debug:
+                k = self._batch_unshuffle_ddp(k, idx_unshuffle)
 
         # compute logits
         # Einstein sum is more intuitive

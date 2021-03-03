@@ -76,7 +76,7 @@ def build_dataloader(dataset,
         sampler=sampler,
         num_workers=num_workers,
         collate_fn=partial(collate, samples_per_gpu=imgs_per_gpu),
-        pin_memory=False,
+        pin_memory=True,
         worker_init_fn=worker_init_fn if seed is not None else None,
         **kwargs)
 

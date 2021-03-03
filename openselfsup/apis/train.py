@@ -6,15 +6,16 @@ import numpy as np
 import torch
 import torch.distributed as dist
 from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
-from mmcv.runner import DistSamplerSeedHook, Runner, obj_from_dict
+from mmcv.runner import DistSamplerSeedHook, Runner, IterBasedRunner, obj_from_dict
 
 from openselfsup.datasets import build_dataloader
-from openselfsup.hooks import build_hook, DistOptimizerHook
+from openselfsup.hooks import build_hook, DistOptimizerHook, NonDistOptimizerHook
 from openselfsup.utils import get_root_logger, optimizers, print_log
 try:
     import apex
 except:
-    print('apex is not installed')
+    pass
+
 
 def set_random_seed(seed, deterministic=False):
     """Set random seed.
@@ -78,8 +79,8 @@ def batch_processor(model, data, train_mode):
     losses = model(**data)
     loss, log_vars = parse_losses(losses)
 
-    outputs = dict(
-        loss=loss, log_vars=log_vars, num_samples=len(data['img'].data))
+    outputs = dict(loss=loss, log_vars=log_vars,
+                   num_samples=len(data['img'].data))
 
     return outputs
 
@@ -89,11 +90,19 @@ def train_model(model,
                 cfg,
                 distributed=False,
                 timestamp=None,
-                meta=None):
+                meta=None,
+                debug=False):
     logger = get_root_logger(cfg.log_level)
 
+    # multiply the number of iters if we have update intervals set
+    if (cfg.get('by_iter', False) and cfg.get('optimizer_config', False) and cfg.optimizer_config.get('update_interval', 1) > 1):
+        print_log("Iter based runner with update_interval set. Multiplying iters by update_interval")
+        print_log(f"Before iters: {cfg.total_iters}")
+        cfg.total_iters = cfg.optimizer_config.update_interval * cfg.total_iters
+        print_log(f"After iters: {cfg.total_iters}")
+
     # start training
-    if distributed:
+    if distributed and not debug:
         _dist_train(
             model, dataset, cfg, logger=logger, timestamp=timestamp, meta=meta)
     else:
@@ -152,7 +161,7 @@ def build_optimizer(model, optimizer_cfg):
             for regexp, options in paramwise_options.items():
                 if re.search(regexp, name):
                     for key, value in options.items():
-                        if key.endswith('_mult'): # is a multiplier
+                        if key.endswith('_mult'):  # is a multiplier
                             key = key[:-5]
                             assert key in optimizer_cfg, \
                                 "{} not in optimizer_cfg".format(key)
@@ -172,6 +181,14 @@ def build_optimizer(model, optimizer_cfg):
 def _dist_train(model, dataset, cfg, logger=None, timestamp=None, meta=None):
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
+
+    # use batch size instead of per-gpu batch size
+    if getattr(cfg.data, 'batch_size', False):
+        num_gpus = torch.cuda.device_count()
+        cfg.data.imgs_per_gpu = int(cfg.data.batch_size // num_gpus)
+        print_log(
+            f"Using {cfg.data.imgs_per_gpu} per gpu for batch size {cfg.data.batch_size}")
+
     data_loaders = [
         build_dataloader(
             ds,
@@ -187,7 +204,8 @@ def _dist_train(model, dataset, cfg, logger=None, timestamp=None, meta=None):
     ]
     optimizer = build_optimizer(model, cfg.optimizer)
     if 'use_fp16' in cfg and cfg.use_fp16:
-        model, optimizer = apex.amp.initialize(model.cuda(), optimizer, opt_level="O1")
+        model, optimizer = apex.amp.initialize(
+            model.cuda(), optimizer, opt_level="O1")
         print_log('**** Initializing mixed precision done. ****')
 
     # put model on gpus
@@ -197,13 +215,21 @@ def _dist_train(model, dataset, cfg, logger=None, timestamp=None, meta=None):
         broadcast_buffers=False)
 
     # build runner
-    runner = Runner(
-        model,
-        batch_processor,
-        optimizer,
-        cfg.work_dir,
-        logger=logger,
-        meta=meta)
+    if not cfg.get('by_iter', False):
+        runner = Runner(
+            model,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta)
+    else:
+        runner = IterBasedRunner(
+            model,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta)
+
     # an ugly walkaround to make the .log and .log.json filenames the same
     runner.timestamp = timestamp
 
@@ -212,7 +238,8 @@ def _dist_train(model, dataset, cfg, logger=None, timestamp=None, meta=None):
     # register hooks
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
-    runner.register_hook(DistSamplerSeedHook())
+    if not cfg.get('by_iter', False):
+        runner.register_hook(DistSamplerSeedHook())
     # register custom hooks
     for hook in cfg.get('custom_hooks', ()):
         if hook.type == 'DeepClusterHook':
@@ -225,7 +252,11 @@ def _dist_train(model, dataset, cfg, logger=None, timestamp=None, meta=None):
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+
+    if not cfg.get('by_iter', False):
+        runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    else:
+        runner.run(data_loaders, cfg.workflow, cfg.total_iters)
 
 
 def _non_dist_train(model,
@@ -235,6 +266,12 @@ def _non_dist_train(model,
                     logger=None,
                     timestamp=None,
                     meta=None):
+
+    # use batch size instead of per-gpu batch size
+    if getattr(cfg.data, 'batch_size', False):
+        cfg.data.imgs_per_gpu = int(cfg.data.batch_size)
+        print_log(
+            f"Using {cfg.data.imgs_per_gpu} per gpu for batch size {cfg.data.batch_size}")
 
     # prepare data loaders
     dataset = dataset if isinstance(dataset, (list, tuple)) else [dataset]
@@ -260,16 +297,25 @@ def _non_dist_train(model,
 
     # build runner
     optimizer = build_optimizer(model, cfg.optimizer)
-    runner = Runner(
-        model,
-        batch_processor,
-        optimizer,
-        cfg.work_dir,
-        logger=logger,
-        meta=meta)
+    optimizer_config = NonDistOptimizerHook(**cfg.optimizer_config)
+
+    if not cfg.get('by_iter', False):
+        runner = Runner(
+            model,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta)
+    else:
+        runner = IterBasedRunner(
+            model,
+            optimizer=optimizer,
+            work_dir=cfg.work_dir,
+            logger=logger,
+            meta=meta)
+
     # an ugly walkaround to make the .log and .log.json filenames the same
     runner.timestamp = timestamp
-    optimizer_config = cfg.optimizer_config
     runner.register_training_hooks(cfg.lr_config, optimizer_config,
                                    cfg.checkpoint_config, cfg.log_config)
 
@@ -285,4 +331,7 @@ def _non_dist_train(model,
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    if not cfg.get('by_iter', False):
+        runner.run(data_loaders, cfg.workflow, cfg.total_epochs)
+    else:
+        runner.run(data_loaders, cfg.workflow, cfg.total_iters)

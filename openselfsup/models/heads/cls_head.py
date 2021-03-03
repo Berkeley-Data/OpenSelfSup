@@ -1,7 +1,7 @@
 import torch.nn as nn
 from mmcv.cnn import kaiming_init, normal_init
 
-from ..utils import accuracy
+from ..utils import accuracy, auroc
 from ..registry import HEADS
 
 
@@ -13,13 +13,18 @@ class ClsHead(nn.Module):
     def __init__(self,
                  with_avg_pool=False,
                  in_channels=2048,
-                 num_classes=1000):
+                 num_classes=1000,
+                 use_bce_loss=False):
         super(ClsHead, self).__init__()
         self.with_avg_pool = with_avg_pool
         self.in_channels = in_channels
         self.num_classes = num_classes
+        self.use_bce_loss = use_bce_loss
 
-        self.criterion = nn.CrossEntropyLoss()
+        if self.use_bce_loss:
+            self.criterion = nn.BCEWithLogitsLoss()
+        else:
+            self.criterion = nn.CrossEntropyLoss()
 
         if self.with_avg_pool:
             self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
@@ -56,5 +61,8 @@ class ClsHead(nn.Module):
         losses = dict()
         assert isinstance(cls_score, (tuple, list)) and len(cls_score) == 1
         losses['loss'] = self.criterion(cls_score[0], labels)
-        losses['acc'] = accuracy(cls_score[0], labels)
+        if self.use_bce_loss:
+            losses['auroc'] = auroc(cls_score[0], labels)
+        else:
+            losses['acc'] = accuracy(cls_score[0], labels)
         return losses

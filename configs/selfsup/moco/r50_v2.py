@@ -22,7 +22,7 @@ model = dict(
 # dataset settings
 data_source_cfg = dict(
     type='ImageNet',
-    memcached=True,
+    memcached=False,
     mclient_path='/mnt/lustre/share/memcached_client')
 data_train_list = 'data/imagenet/meta/train.txt'
 data_train_root = 'data/imagenet/train'
@@ -74,6 +74,7 @@ data = dict(
 optimizer = dict(type='SGD', lr=0.03, weight_decay=0.0001, momentum=0.9)
 # learning policy
 lr_config = dict(policy='CosineAnnealing', min_lr=0.)
-checkpoint_config = dict(interval=10)
+checkpoint_config = dict(interval=24)
 # runtime settings
-total_epochs = 200
+total_epochs = 24
+

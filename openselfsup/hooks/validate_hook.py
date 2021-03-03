@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from openselfsup.utils import nondist_forward_collect, dist_forward_collect
 from .registry import HOOKS
 
+import wandb
 
 @HOOKS.register_module
 class ValidateHook(Hook):
@@ -37,6 +38,8 @@ class ValidateHook(Hook):
             raise TypeError(
                 'dataset must be a Dataset object or a dict, not {}'.format(
                     type(dataset)))
+        self.run_after_epoch = eval_kwargs.get('by_epoch', True)
+        self.val_name = eval_kwargs.get('name', "unnamed-val-hook")
         self.data_loader = datasets.build_dataloader(
             self.dataset,
             eval_kwargs['imgs_per_gpu'],
@@ -56,9 +59,28 @@ class ValidateHook(Hook):
             self._run_validate(runner)
 
     def after_train_epoch(self, runner):
+        if not self.run_after_epoch:
+            return
         if not self.every_n_epochs(runner, self.interval):
             return
         self._run_validate(runner)
+
+    def after_train_iter(self, runner):
+
+        try:
+            # wandb.log({"val_loss": runner.outputs['log_vars']['loss']})
+            # wandb.log({"val_acc": runner.outputs['log_vars']['acc']})
+            wandb.log(runner.outputs['log_vars'])
+        except:
+            print("error parsing metrics")
+            print(runner.outputs)
+
+        if self.run_after_epoch:
+            return
+        if not self.every_n_iters(runner, self.interval):
+            return
+        self._run_validate(runner)
+
 
     def _run_validate(self, runner):
         runner.model.eval()
@@ -75,12 +97,15 @@ class ValidateHook(Hook):
                 self._evaluate(runner, torch.from_numpy(val), name)
         runner.model.train()
 
+
     def _evaluate(self, runner, results, keyword):
+
         eval_res = self.dataset.evaluate(
             results,
             keyword=keyword,
             logger=runner.logger,
             **self.eval_kwargs['eval_param'])
         for name, val in eval_res.items():
-            runner.log_buffer.output[name] = val
+            runner.log_buffer.output["{}-{}".format(self.val_name,name)] = val
         runner.log_buffer.ready = True
+        wandb.log(eval_res)

@@ -300,6 +300,7 @@ class ResNet(nn.Module):
                  conv_cfg=None,
                  norm_cfg=dict(type='BN', requires_grad=True),
                  norm_eval=False,
+                 norm_train=False,
                  with_cp=False,
                  zero_init_residual=False):
         super(ResNet, self).__init__()
@@ -319,6 +320,7 @@ class ResNet(nn.Module):
         self.norm_cfg = norm_cfg
         self.with_cp = with_cp
         self.norm_eval = norm_eval
+        self.norm_train = norm_train
         self.zero_init_residual = zero_init_residual
         self.block, stage_blocks = self.arch_settings[depth]
         self.stage_blocks = stage_blocks[:num_stages]
@@ -386,7 +388,7 @@ class ResNet(nn.Module):
     def init_weights(self, pretrained=None):
         if isinstance(pretrained, str):
             logger = get_root_logger()
-            load_checkpoint(self, pretrained, strict=True, logger=logger)
+            load_checkpoint(self, pretrained, strict=False, logger=logger)
         elif pretrained is None:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
@@ -427,3 +429,14 @@ class ResNet(nn.Module):
                 # trick: eval have effect on BatchNorm only
                 if isinstance(m, _BatchNorm):
                     m.eval()
+
+
+        if mode and self.norm_train:
+            for m in self.modules():
+                # # trick: eval have effect on BatchNorm only
+                # if isinstance(m, _BatchNorm):
+                #     m.eval()
+                if isinstance(m, (_BatchNorm)):
+                    m.train()
+                    for p in m.parameters():
+                        p.requires_grad = True
