@@ -45,13 +45,13 @@ class ContrastiveMSDataset(Sen12msDataset):
         super(ContrastiveMSDataset, self).__init__(data_source, pipeline, prefetch)
 
     def __getitem__(self, idx):
-        img = self.data_source.get_sample(idx)
-        assert isinstance(img, Image.Image), \
-            'The output from the data source must be an Image, got: {}. \
-            Please ensure that the list file does not contain labels.'.format(
-            type(img))
-        img1 = self.pipeline(img)
-        img2 = self.pipeline(img)
+        img1, img2 = self.data_source.get_sample(idx)
+        # assert isinstance(img1, Image.Image), \
+        #     'The output from the data source must be an Image, got: {}. \
+        #     Please ensure that the list file does not contain labels.'.format(
+        #     type(img1))
+        img1 = self.pipeline(img1)
+        img2 = self.pipeline(img2)
         if self.prefetch:
             img1 = torch.from_numpy(to_numpy(img1))
             img2 = torch.from_numpy(to_numpy(img2))
