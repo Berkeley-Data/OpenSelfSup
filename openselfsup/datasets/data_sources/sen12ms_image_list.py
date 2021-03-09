@@ -17,7 +17,7 @@ from tqdm import tqdm
 
 # indices of sentinel-2 bands related to land
 S2_BANDS_LD = [2, 3, 4, 5, 6, 7, 8, 9, 12, 13]
-S2_BANDS_RGB = [2, 3, 4] # B(2),G(3),R(4)
+S2_BANDS_RGB = [2, 3, 4] # B(2),G(3),R(4)  [todo] temp fix for running code end to end.
 
 # util function for reading s2 data
 def load_s2(path, imgTransform, s2_band):
@@ -34,14 +34,27 @@ def load_s2(path, imgTransform, s2_band):
 # util function for reading s1 data
 def load_s1(path, imgTransform):
     with rasterio.open(path) as data:
-        s1 = data.read()
-    s1 = s1.astype(np.float32)
-    s1 = np.nan_to_num(s1)
-    s1 = np.clip(s1, -25, 0)
+        band1 = data.read(1)
+        band2 = data.read(2)
+
+    band1 = band1.astype(np.float32)
+    band1 = np.nan_to_num(band1)
+    band1 = np.clip(band1, -25, 0)
     if not imgTransform:
-        s1 /= 25
-        s1 += 1
-    s1 = s1.astype(np.float32)
+        band1 /= 25
+        band1 += 1
+
+    band2 = band2.astype(np.float32)
+    band2 = np.nan_to_num(band2)
+    band2 = np.clip(band2, -25, 0)
+    if not imgTransform:
+        band2 /= 25
+        band2 += 1
+
+    band3 = abs(band2 - band1)
+    band3 /= 25
+
+    s1 = np.stack((band1, band2, band3))
     return s1
 
 
@@ -149,5 +162,5 @@ class Sen12MSImageList(object):
             img = self.mc_loader(self.fns[idx])
             return img
         else:
-            img_s1, img_s2 = load_sample(self.fns[idx], None, use_s1=True, use_s2=True, use_RGB=False)
+            img_s1, img_s2 = load_sample(self.fns[idx], None, use_s1=True, use_s2=False, use_RGB=True)
             return img_s1, img_s2

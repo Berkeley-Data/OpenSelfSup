@@ -68,7 +68,7 @@ train_pipeline = [
     #     ],
     #     p=0.5),
     # dict(type='RandomHorizontalFlip'),
-    dict(type='ToTensor'),
+    dict(type='Sen12msToTensor'),
     dict(type='Sen12msNormalize', **img_norm_cfg),
 ]
 data = dict(
@@ -87,4 +87,4 @@ optimizer = dict(type='SGD', lr=0.03, weight_decay=0.0001, momentum=0.9)
 lr_config = dict(policy='CosineAnnealing', min_lr=0.)
 checkpoint_config = dict(interval=20)
 # runtime settings
-total_epochs = 2
+total_epochs = 20
