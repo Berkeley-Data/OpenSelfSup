@@ -37,7 +37,6 @@ class ContrastiveDataset(BaseDataset):
 class ContrastiveMSDataset(Sen12msDataset):
     """Dataset for contrastive learning methods that forward
         two views of the image at a time (MoCo, SimCLR).
-        [todo] need to read from different
     """
 
     def __init__(self, data_source, pipeline, prefetch=False):
@@ -45,17 +44,17 @@ class ContrastiveMSDataset(Sen12msDataset):
         super(ContrastiveMSDataset, self).__init__(data_source, pipeline, prefetch)
 
     def __getitem__(self, idx):
-        img1, img2 = self.data_source.get_sample(idx)
+        s1_img, s2_img = self.data_source.get_sample(idx)
         # assert isinstance(img1, Image.Image), \
         #     'The output from the data source must be an Image, got: {}. \
         #     Please ensure that the list file does not contain labels.'.format(
         #     type(img1))
-        img1 = self.pipeline(img1)
-        img2 = self.pipeline(img2)
+        s1_img = self.pipeline(s1_img)
+        s2_img = self.pipeline(s2_img)
         if self.prefetch:
-            img1 = torch.from_numpy(to_numpy(img1))
-            img2 = torch.from_numpy(to_numpy(img2))
-        img_cat = torch.cat((img1.unsqueeze(0), img2.unsqueeze(0)), dim=0)
+            s1_img = torch.from_numpy(to_numpy(s1_img))
+            s2_img = torch.from_numpy(to_numpy(s2_img))
+        img_cat = torch.cat((s1_img.unsqueeze(0), s2_img.unsqueeze(0)), dim=0)
         return dict(img=img_cat)
 
     def evaluate(self, scores, keyword, logger=None, **kwargs):

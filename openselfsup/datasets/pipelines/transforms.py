@@ -131,7 +131,8 @@ class Sen12msNormalize(object):
 
     def __call__(self, rt_sample):
 
-        img, label, sample_id = rt_sample['image'], rt_sample['label'], rt_sample['id']
+        # img, label, sample_id = rt_sample['image'], rt_sample['label'], rt_sample['id']
+        img = rt_sample
 
         # different input channels
         if img.size()[0] == 12:
@@ -152,14 +153,15 @@ class Sen12msNormalize(object):
             for t, m, s in zip(img, self.bands_s1_mean, self.bands_s1_std):
                 t.sub_(m).div_(s)
 
-        return {'image': img, 'label': label, 'id': sample_id}
+        # return {'image': img, 'label': label, 'id': sample_id}
+        return img
 
 @PIPELINES.register_module
 class Sen12msToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, rt_sample):
-        img, label, sample_id = rt_sample['image'], rt_sample['label'], rt_sample['id']
+        # img, label, sample_id = rt_sample['image'], rt_sample['label'], rt_sample['id']
 
-        rt_sample = {'image': torch.tensor(img), 'label': label, 'id': sample_id}
-        return rt_sample
+        # rt_sample = {'image': torch.tensor(img), 'label': label, 'id': sample_id}
+        return torch.tensor(rt_sample)

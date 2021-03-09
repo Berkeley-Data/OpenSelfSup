@@ -44,31 +44,31 @@ img_norm_cfg = dict(bands_mean={'s1_mean': [-11.76858, -18.294598],
                                           1082.4341, 1057.7628, 1136.1942, 1132.7898, 991.48016]})
 
 train_pipeline = [
-    dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
-    dict(
-        type='RandomAppliedTrans',
-        transforms=[
-            dict(
-                type='ColorJitter',
-                brightness=0.4,
-                contrast=0.4,
-                saturation=0.4,
-                hue=0.4)
-        ],
-        p=0.8),
-    dict(type='RandomGrayscale', p=0.2),
-    dict(
-        type='RandomAppliedTrans',
-        transforms=[
-            dict(
-                type='GaussianBlur',
-                sigma_min=0.1,
-                sigma_max=2.0,
-            )
-        ],
-        p=0.5),
-    dict(type='RandomHorizontalFlip'),
-    dict(type='Sen12msToTensor'),
+    # dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
+    # dict(
+    #     type='RandomAppliedTrans',
+    #     transforms=[
+    #         dict(
+    #             type='ColorJitter',
+    #             brightness=0.4,
+    #             contrast=0.4,
+    #             saturation=0.4,
+    #             hue=0.4)
+    #     ],
+    #     p=0.8),
+    # dict(type='RandomGrayscale', p=0.2),
+    # dict(
+    #     type='RandomAppliedTrans',
+    #     transforms=[
+    #         dict(
+    #             type='GaussianBlur',
+    #             sigma_min=0.1,
+    #             sigma_max=2.0,
+    #         )
+    #     ],
+    #     p=0.5),
+    # dict(type='RandomHorizontalFlip'),
+    dict(type='ToTensor'),
     dict(type='Sen12msNormalize', **img_norm_cfg),
 ]
 data = dict(
