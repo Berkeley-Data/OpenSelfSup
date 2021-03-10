@@ -3,7 +3,7 @@ from PIL import Image
 from .registry import DATASETS
 from .base import BaseDataset
 from .utils import to_numpy
-
+from .sen12ms_dataset import Sen12msDataset
 
 @DATASETS.register_module
 class ContrastiveDataset(BaseDataset):
@@ -27,6 +27,34 @@ class ContrastiveDataset(BaseDataset):
             img1 = torch.from_numpy(to_numpy(img1))
             img2 = torch.from_numpy(to_numpy(img2))
         img_cat = torch.cat((img1.unsqueeze(0), img2.unsqueeze(0)), dim=0)
+        return dict(img=img_cat)
+
+    def evaluate(self, scores, keyword, logger=None, **kwargs):
+        raise NotImplemented
+
+
+@DATASETS.register_module
+class ContrastiveMSDataset(Sen12msDataset):
+    """Dataset for contrastive learning methods that forward
+        two views of the image at a time (MoCo, SimCLR).
+    """
+
+    def __init__(self, data_source, pipeline, prefetch=False):
+        data_source['return_label'] = False
+        super(ContrastiveMSDataset, self).__init__(data_source, pipeline, prefetch)
+
+    def __getitem__(self, idx):
+        s1_img, s2_img = self.data_source.get_sample(idx)
+        # assert isinstance(img1, Image.Image), \
+        #     'The output from the data source must be an Image, got: {}. \
+        #     Please ensure that the list file does not contain labels.'.format(
+        #     type(img1))
+        s1_img = self.pipeline(s1_img)
+        s2_img = self.pipeline(s2_img)
+        if self.prefetch:
+            s1_img = torch.from_numpy(to_numpy(s1_img))
+            s2_img = torch.from_numpy(to_numpy(s2_img))
+        img_cat = torch.cat((s1_img.unsqueeze(0), s2_img.unsqueeze(0)), dim=0)
         return dict(img=img_cat)
 
     def evaluate(self, scores, keyword, logger=None, **kwargs):

@@ -21,46 +21,55 @@ model = dict(
     head=dict(type='ContrastiveHead', temperature=0.2))
 # dataset settings
 data_source_cfg = dict(
-    type='ImageNet',
+    type='Sen12MS',
     memcached=False,
     mclient_path='/mnt/lustre/share/memcached_client')
 data_train_list = '/scratch/crguest/OpenSelfSup/data/sen12ms/meta/small_sample.txt'
 data_train_root = ''
-dataset_type = 'ContrastiveDataset'
+dataset_type = 'ContrastiveMSDataset'
 # img_norm_cfg = dict(mean=[0.368, 0.381, 0.3436], std=[0.2035, 0.1854, 0.1849])
-img_norm_cfg = dict(s1_mean=[-11.76858, -18.294598],
-                    s2_mean=[1226.4215, 1137.3799, 1139.6792, 1350.9973, 1932.9058, 2211.1584, 2154.9846, 2409.1128,
-                             2001.8622, 1356.0801],
-                    s1_std=[4.525339, 4.3586307],
-                    s2_std=[741.6254, 740.883, 960.1045, 946.76056, 985.52747, 1082.4341, 1057.7628, 1136.1942,
-                            1132.7898, 991.48016])
+# img_norm_cfg = dict(s1_mean=[-11.76858, -18.294598],
+#                     s2_mean=[1226.4215, 1137.3799, 1139.6792, 1350.9973, 1932.9058, 2211.1584, 2154.9846, 2409.1128,
+#                              2001.8622, 1356.0801],
+#                     s1_std=[4.525339, 4.3586307],
+#                     s2_std=[741.6254, 740.883, 960.1045, 946.76056, 985.52747, 1082.4341, 1057.7628, 1136.1942,
+#                             1132.7898, 991.48016])
+
+# statistics for "multi_label"
+img_norm_cfg = dict(bands_mean={'s1_mean': [-11.76858, -18.294598],
+                                's2_mean': [1226.4215, 1137.3799, 1139.6792, 1350.9973, 1932.9058,
+                                            2211.1584, 2154.9846, 2409.1128, 2001.8622, 1356.0801]},
+                    bands_std={'s1_std': [4.525339, 4.3586307],
+                               's2_std': [741.6254, 740.883, 960.1045, 946.76056, 985.52747,
+                                          1082.4341, 1057.7628, 1136.1942, 1132.7898, 991.48016]})
+
 train_pipeline = [
-    dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
-    dict(
-        type='RandomAppliedTrans',
-        transforms=[
-            dict(
-                type='ColorJitter',
-                brightness=0.4,
-                contrast=0.4,
-                saturation=0.4,
-                hue=0.4)
-        ],
-        p=0.8),
-    dict(type='RandomGrayscale', p=0.2),
-    dict(
-        type='RandomAppliedTrans',
-        transforms=[
-            dict(
-                type='GaussianBlur',
-                sigma_min=0.1,
-                sigma_max=2.0,
-            )
-        ],
-        p=0.5),
-    dict(type='RandomHorizontalFlip'),
-    dict(type='ToTensor'),
-    dict(type='Normalize', **img_norm_cfg),
+    # dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
+    # dict(
+    #     type='RandomAppliedTrans',
+    #     transforms=[
+    #         dict(
+    #             type='ColorJitter',
+    #             brightness=0.4,
+    #             contrast=0.4,
+    #             saturation=0.4,
+    #             hue=0.4)
+    #     ],
+    #     p=0.8),
+    # dict(type='RandomGrayscale', p=0.2),
+    # dict(
+    #     type='RandomAppliedTrans',
+    #     transforms=[
+    #         dict(
+    #             type='GaussianBlur',
+    #             sigma_min=0.1,
+    #             sigma_max=2.0,
+    #         )
+    #     ],
+    #     p=0.5),
+    # dict(type='RandomHorizontalFlip'),
+    dict(type='Sen12msToTensor'),
+    dict(type='Sen12msNormalize', **img_norm_cfg),
 ]
 data = dict(
     imgs_per_gpu=64,  # total 64*4=256
@@ -78,4 +87,4 @@ optimizer = dict(type='SGD', lr=0.03, weight_decay=0.0001, momentum=0.9)
 lr_config = dict(policy='CosineAnnealing', min_lr=0.)
 checkpoint_config = dict(interval=20)
 # runtime settings
-total_epochs = 1
+total_epochs = 20
