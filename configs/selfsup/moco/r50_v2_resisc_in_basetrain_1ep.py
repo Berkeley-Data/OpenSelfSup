@@ -29,7 +29,6 @@ data_train_root = '/scratch/crguest/OpenSelfSup/data/resisc45'
 dataset_type = 'ContrastiveDataset'
 img_norm_cfg = dict(mean=[0.368, 0.381, 0.3436], std=[0.2035, 0.1854, 0.1849])
 train_pipeline = [
-    dict(type='ToTensor'),
     dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
     dict(
         type='RandomAppliedTrans',
@@ -73,4 +72,4 @@ optimizer = dict(type='SGD', lr=0.03, weight_decay=0.0001, momentum=0.9)
 lr_config = dict(policy='CosineAnnealing', min_lr=0.)
 checkpoint_config = dict(interval=20)
 # runtime settings
-total_epochs = 5
+total_epochs = 1

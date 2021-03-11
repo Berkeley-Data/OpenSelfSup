@@ -44,7 +44,7 @@ img_norm_cfg = dict(bands_mean={'s1_mean': [-11.76858, -18.294598],
                                           1082.4341, 1057.7628, 1136.1942, 1132.7898, 991.48016]})
 
 train_pipeline = [
-    dict(type='RandomResizedCrop', size=256, scale=(0.2, 1.)),
+    # dict(type='RandomResizedCrop', size=224, scale=(0.2, 1.)),
     # dict(
     #     type='RandomAppliedTrans',
     #     transforms=[
@@ -87,4 +87,4 @@ optimizer = dict(type='SGD', lr=0.03, weight_decay=0.0001, momentum=0.9)
 lr_config = dict(policy='CosineAnnealing', min_lr=0.)
 checkpoint_config = dict(interval=20)
 # runtime settings
-total_epochs = 2
+total_epochs = 20

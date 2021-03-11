@@ -3,8 +3,6 @@ from PIL import Image
 
 from ..registry import DATASOURCES
 from .utils import McLoader
-from torchvision import transforms as _transforms
-
 
 import os
 from os import walk
@@ -77,9 +75,6 @@ def load_sample(sample, imgTransform, use_s1, use_s2, use_RGB):
     if use_s1:
         img_s1 = load_s1(sample["s1"], imgTransform)
 
-    t = _transforms.ToPILImage()
-    img_s1 = t(img_s1)
-    img_s2 = t(img_s2)
     return img_s1, img_s2
 
 
