@@ -112,3 +112,56 @@ class Solarization(object):
     def __repr__(self):
         repr_str = self.__class__.__name__
         return repr_str
+
+@PIPELINES.register_module
+class Sen12msNormalize(object):
+    def __init__(self, bands_mean, bands_std):
+
+        self.bands_s1_mean = bands_mean['s1_mean']
+        self.bands_s1_std = bands_std['s1_std']
+
+        self.bands_s2_mean = bands_mean['s2_mean']
+        self.bands_s2_std = bands_std['s2_std']
+
+        self.bands_RGB_mean = bands_mean['s2_mean'][0:3]
+        self.bands_RGB_std = bands_std['s2_std'][0:3]
+
+        self.bands_all_mean = self.bands_s2_mean + self.bands_s1_mean
+        self.bands_all_std = self.bands_s2_std + self.bands_s1_std
+
+    def __call__(self, rt_sample):
+
+        # img, label, sample_id = rt_sample['image'], rt_sample['label'], rt_sample['id']
+        img = rt_sample
+
+        # different input channels
+        if img.size()[0] == 12:
+            for t, m, s in zip(img, self.bands_all_mean, self.bands_all_std):
+                t.sub_(m).div_(s)
+        elif img.size()[0] == 10:
+            for t, m, s in zip(img, self.bands_s2_mean, self.bands_s2_std):
+                t.sub_(m).div_(s)
+        elif img.size()[0] == 5:
+            for t, m, s in zip(img,
+                               self.bands_RGB_mean + self.bands_s1_mean,
+                               self.bands_RGB_std + self.bands_s1_std):
+                t.sub_(m).div_(s)
+        elif img.size()[0] == 3:
+            for t, m, s in zip(img, self.bands_RGB_mean, self.bands_RGB_std):
+                t.sub_(m).div_(s)
+        else:
+            for t, m, s in zip(img, self.bands_s1_mean, self.bands_s1_std):
+                t.sub_(m).div_(s)
+
+        # return {'image': img, 'label': label, 'id': sample_id}
+        return img
+
+@PIPELINES.register_module
+class Sen12msToTensor(object):
+    """Convert ndarrays in sample to Tensors."""
+
+    def __call__(self, rt_sample):
+        # img, label, sample_id = rt_sample['image'], rt_sample['label'], rt_sample['id']
+
+        # rt_sample = {'image': torch.tensor(img), 'label': label, 'id': sample_id}
+        return torch.tensor(rt_sample)

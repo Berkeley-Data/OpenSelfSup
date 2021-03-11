@@ -81,6 +81,7 @@ def build_dataloader(dataset,
         **kwargs)
 
     if prefetch:
+        # [todo] this code won't work with sen12ms
         data_loader = PrefetchLoader(data_loader, img_norm_cfg['mean'], img_norm_cfg['std'])
 
     return data_loader
@@ -89,7 +90,6 @@ def build_dataloader(dataset,
 def worker_init_fn(seed):
     np.random.seed(seed)
     random.seed(seed)
-
 
 class PrefetchLoader:
     """
