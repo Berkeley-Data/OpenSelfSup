@@ -22,22 +22,34 @@ class BaseModel(nn.Module):
     def train_step(self, data, optimizer, **kwargs):
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
+        if 'img' in data:
+            nimg = len(data['img'].data)
+        else:
+            nimg = len(data['img_q'].data)
         outputs = dict(loss=loss, log_vars=log_vars,
-                       num_samples=len(data['img'].data))
+                       num_samples=nimg)
         return outputs
 
     def eval_step(self, data, optimizer, **kwargs):
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
+        if 'img' in data:
+            nimg = len(data['img'].data)
+        else:
+            nimg = len(data['img_q'].data)
         outputs = dict(loss=loss, log_vars=log_vars,
-                       num_samples=len(data['img'].data))
+                       num_samples=nimg)
         return outputs
 
     def val(self, data, optimizer, **kwargs):
         losses = self(**data)
         loss, log_vars = self._parse_losses(losses)
+        if 'img' in data:
+            nimg = len(data['img'].data)
+        else:
+            nimg = len(data['img_q'].data)
         outputs = dict(loss=loss, log_vars=log_vars,
-                       num_samples=len(data['img'].data))
+                       num_samples=nimg)
         return outputs
 
     def _parse_losses(self, losses):
@@ -98,6 +110,9 @@ class MOCO(BaseModel):
 
     def __init__(self,
                  backbone,
+                 input_module_q=None,
+                 input_module_k=None,
+                 random_swap_q_k=False,
                  neck=None,
                  head=None,
                  pretrained=None,
@@ -106,6 +121,12 @@ class MOCO(BaseModel):
                  momentum=0.999,
                  **kwargs):
         super(MOCO, self).__init__()
+
+        # Allow for multi-band input
+        self.input_module_q=builder.build_input_module(input_module_q)
+        self.input_module_k=builder.build_input_module(input_module_k)
+        self.random_swap_q_k = random_swap_q_k
+
         self.encoder_q = nn.Sequential(
             builder.build_backbone(backbone), builder.build_neck(neck))
         self.encoder_k = nn.Sequential(
@@ -114,6 +135,7 @@ class MOCO(BaseModel):
         for param in self.encoder_k.parameters():
             param.requires_grad = False
         self.head = builder.build_head(head)
+
         self.init_weights(pretrained=pretrained)
 
         self.queue_len = queue_len
@@ -212,7 +234,7 @@ class MOCO(BaseModel):
 
         return x_gather[idx_this]
 
-    def forward_train(self, img, **kwargs):
+    def forward_train(self, img=None, im_q=None, im_k=None, **kwargs):
         """Forward computation during training.
 
         Args:
@@ -222,11 +244,24 @@ class MOCO(BaseModel):
         Returns:
             dict[str, Tensor]: A dictionary of loss components.
         """
-        assert img.dim() == 5, \
-            "Input must have 5 dims, got: {}".format(img.dim())
-        im_q = img[:, 0, ...].contiguous()
-        im_k = img[:, 1, ...].contiguous()
+        if img:
+            assert img.dim() == 5, \
+                "Input must have 5 dims, got: {}".format(img.dim())
+
+        if img and not im_q:
+            im_q = img[:, 0, ...].contiguous()
+        if img and not im_k:
+            im_k = img[:, 1, ...].contiguous()
+
+        # PR - TODO randomly swap im_q and im_k here
+
         # compute query features
+        # TODO here is where we use init_module
+        if self.input_module_q is not None:
+            im_q = self.input_module_q(im_q)
+        if self.input_module_k is not None:
+            im_k = self.input_module_k(im_k)
+
         q = self.encoder_q(im_q)[0]  # queries: NxC
         q = nn.functional.normalize(q, dim=1)
 
@@ -260,13 +295,16 @@ class MOCO(BaseModel):
     def forward_test(self, img, **kwargs):
         pass
 
-    def forward(self, img, mode='train', **kwargs):
+    def forward(self, img=None, img_q=None, img_k=None, mode='train', **kwargs):
+        """
+        takes img (concat tensor of both images) or explicity img_q and img_k
+        """
         if mode == 'train':
-            return self.forward_train(img, **kwargs)
+            return self.forward_train(img=img, im_q=img_q, im_k=img_k, **kwargs)
         elif mode == 'test':
-            return self.forward_test(img, **kwargs)
+            return self.forward_test(img=img, im_q=img_q, im_k=img_k, **kwargs)
         elif mode == 'extract':
-            return self.backbone(img)
+            return self.backbone(img=img, im_q=img_q, im_k=img_k)
         else:
             raise Exception("No such mode: {}".format(mode))
 
