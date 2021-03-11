@@ -2,7 +2,7 @@ from torch import nn
 from torch import randn
 
 from openselfsup.utils import build_from_cfg
-from .registry import (BACKBONES, MODELS, NECKS, HEADS, MEMORIES, LOSSES)
+from .registry import (BACKBONES, MODELS, INPUT_MODULES, NECKS, HEADS, MEMORIES, LOSSES)
 
 
 def build(cfg, registry, default_args=None):
@@ -71,3 +71,7 @@ def build_loss(cfg):
 def build_model(cfg):
     """Build model."""
     return build(cfg, MODELS)
+
+def build_input_module(cfg):
+    """Build input module."""
+    return build(cfg, INPUT_MODULES)

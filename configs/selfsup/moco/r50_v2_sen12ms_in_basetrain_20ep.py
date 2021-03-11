@@ -18,7 +18,18 @@ model = dict(
         hid_channels=2048,
         out_channels=128,
         with_avg_pool=True),
-    head=dict(type='ContrastiveHead', temperature=0.2))
+    head=dict(type='ContrastiveHead', temperature=0.2),
+    input_module_q=dict(
+        type='Conv1x1Block',
+        in_channels=10,
+        out_channels=3,
+    ),
+    input_module_k=dict(
+        type='Conv1x1Block',
+        in_channels=2,
+        out_channels=3,
+    ),
+)
 # dataset settings
 data_source_cfg = dict(
     type='Sen12MS',
@@ -73,7 +84,7 @@ train_pipeline = [
 ]
 data = dict(
     imgs_per_gpu=64,  # total 64*4=256
-    workers_per_gpu=4,
+    workers_per_gpu=0,
     drop_last=True,
     train=dict(
         type=dataset_type,

@@ -51,11 +51,14 @@ class ContrastiveMSDataset(Sen12msDataset):
         #     type(img1))
         s1_img = self.pipeline(s1_img)
         s2_img = self.pipeline(s2_img)
-        if self.prefetch:
-            s1_img = torch.from_numpy(to_numpy(s1_img))
-            s2_img = torch.from_numpy(to_numpy(s2_img))
-        img_cat = torch.cat((s1_img.unsqueeze(0), s2_img.unsqueeze(0)), dim=0)
-        return dict(img=img_cat)
+        
+        # Colorado: I would suggest to not mess with prefetch -- it's unstable with OpenSelfSup
+        # if self.prefetch:
+        #     s1_img = torch.from_numpy(to_numpy(s1_img))
+        #     s2_img = torch.from_numpy(to_numpy(s2_img))
+        # img_cat = torch.cat((s1_img.unsqueeze(0), s2_img.unsqueeze(0)), dim=0)
+
+        return dict(img_k=s1_img, img_q=s2_img)
 
     def evaluate(self, scores, keyword, logger=None, **kwargs):
         raise NotImplemented
