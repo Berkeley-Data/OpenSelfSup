@@ -74,4 +74,6 @@ def build_model(cfg):
 
 def build_input_module(cfg):
     """Build input module."""
+    if cfg is None:
+        return None
     return build(cfg, INPUT_MODULES)
