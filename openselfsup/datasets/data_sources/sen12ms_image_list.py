@@ -3,6 +3,8 @@ from PIL import Image
 
 from ..registry import DATASOURCES
 from .utils import McLoader
+from torchvision import transforms as _transforms
+
 
 import os
 from os import walk
@@ -51,10 +53,10 @@ def load_s1(path, imgTransform):
         band2 /= 25
         band2 += 1
 
-    band3 = abs(band2 - band1)
-    band3 /= 25
+    # band3 = abs(band2 - band1)
+    # band3 /= 25
 
-    s1 = np.stack((band1, band2, band3))
+    s1 = np.stack((band1, band2)) # , band3))
     return s1
 
 
@@ -68,13 +70,17 @@ def load_sample(sample, imgTransform, use_s1, use_s2, use_RGB):
     if use_s2:
         img_s2 = load_s2(sample["s2"], imgTransform, s2_band=S2_BANDS_LD)
     # load only RGB
-    if use_RGB and use_s2 == False:
+    elif use_RGB and use_s2 == False:
         img_s2 = load_s2(sample["s2"], imgTransform, s2_band=S2_BANDS_RGB)
 
     # load s1 data
     if use_s1:
         img_s1 = load_s1(sample["s1"], imgTransform)
 
+    # Colorado comment out for now
+    # t = _transforms.ToPILImage()
+    # img_s1 = t(img_s1)
+    # img_s2 = t(img_s2)
     return img_s1, img_s2
 
 
@@ -162,5 +168,5 @@ class Sen12MSImageList(object):
             img = self.mc_loader(self.fns[idx])
             return img
         else:
-            img_s1, img_s2 = load_sample(self.fns[idx], None, use_s1=True, use_s2=False, use_RGB=True)
+            img_s1, img_s2 = load_sample(self.fns[idx], None, use_s1=True, use_s2=True, use_RGB=False)
             return img_s1, img_s2
