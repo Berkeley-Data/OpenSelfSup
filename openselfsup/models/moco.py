@@ -261,8 +261,8 @@ class MOCO(BaseModel):
 
         # use images from both source in key and query
         half_bsz = im_q.shape[0]//2
-        all_ims_qk = torch.cat([im_q[:half_bsz, ...], im_k[:half_bsz, ...]], dim=0)
-        all_ims_kq = torch.cat([im_q[half_bsz:, ...], im_k[half_bsz:, ...]], dim=0)
+        all_ims_qk = torch.cat([im_q[:half_bsz, ...], im_k[half_bsz:, ...]], dim=0)
+        all_ims_kq = torch.cat([im_k[:half_bsz, ...], im_q[half_bsz:, ...]], dim=0)
         im_q = all_ims_qk
         im_k = all_ims_kq
 
