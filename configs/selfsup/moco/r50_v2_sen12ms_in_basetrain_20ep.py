@@ -79,6 +79,17 @@ train_pipeline = [
     #     ],
     #     p=0.5),
     # dict(type='RandomHorizontalFlip'),
+
+    # TODO: Fix the following
+    # dict(type='Alb_RandomCrop'),
+    # dict(type='Alb_ColorJitter'),
+
+    dict(type='Alb_GaussianBlur'),
+    dict(type='Alb_ElasticTransform'),
+    dict(type='Alb_Blur'),
+    dict(type='Alb_VerticalFlip'),
+    dict(type='Alb_HorizontalFlip'),
+    dict(type='Alb_RandomBrightnessContrast'),
     dict(type='Sen12msToTensor'),
     dict(type='Sen12msNormalize', **img_norm_cfg),
 ]
