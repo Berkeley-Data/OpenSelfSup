@@ -3,7 +3,7 @@ try:
     import apex
 except:
     pass
-
+from mmcv.runner.dist_utils import master_only
 import wandb
 
 class DistOptimizerHook(OptimizerHook):
@@ -20,13 +20,7 @@ class DistOptimizerHook(OptimizerHook):
         runner.optimizer.zero_grad()
 
     def after_train_iter(self, runner):
-
-        try:
-            wandb.log(runner.outputs['log_vars'])
-        except:
-            print("error parsing metrics")
-            print(runner.outputs)
-
+        self.log_wandb(runner)
         runner.outputs['loss'] /= self.update_interval
         if self.use_fp16:
             with apex.amp.scale_loss(runner.outputs['loss'], runner.optimizer) as scaled_loss:
@@ -39,6 +33,16 @@ class DistOptimizerHook(OptimizerHook):
                 self.clip_grads(runner.model.parameters())
             runner.optimizer.step()
             runner.optimizer.zero_grad()
+
+    @master_only
+    def log_wandb(self, runner):
+        try:
+            # wandb.log({"val_loss": runner.outputs['log_vars']['loss']})
+            # wandb.log({"val_acc": runner.outputs['log_vars']['acc']})
+            wandb.log(runner.outputs['log_vars'])
+        except Exception as e:
+            print(f"error logging to wandb: {e}")
+            print(runner.outputs)
 
 class NonDistOptimizerHook(OptimizerHook):
     """Optimizer hook for distributed training."""

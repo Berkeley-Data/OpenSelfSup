@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 
 from openselfsup.utils import nondist_forward_collect, dist_forward_collect
 from .registry import HOOKS
-
+from mmcv.runner.dist_utils import master_only
 import wandb
 
 @HOOKS.register_module
@@ -66,20 +66,23 @@ class ValidateHook(Hook):
         self._run_validate(runner)
 
     def after_train_iter(self, runner):
-
-        try:
-            # wandb.log({"val_loss": runner.outputs['log_vars']['loss']})
-            # wandb.log({"val_acc": runner.outputs['log_vars']['acc']})
-            wandb.log(runner.outputs['log_vars'])
-        except:
-            print("error parsing metrics")
-            print(runner.outputs)
-
+        self.log_wandb((runner))
         if self.run_after_epoch:
             return
         if not self.every_n_iters(runner, self.interval):
             return
         self._run_validate(runner)
+
+
+    @master_only
+    def log_wandb(self, runner):
+        try:
+            # wandb.log({"val_loss": runner.outputs['log_vars']['loss']})
+            # wandb.log({"val_acc": runner.outputs['log_vars']['acc']})
+            wandb.log(runner.outputs['log_vars'])
+        except Exception as e:
+            print(f"error logging to wandb: {e}")
+            print(runner.outputs)
 
 
     def _run_validate(self, runner):
