@@ -253,14 +253,24 @@ class MOCO(BaseModel):
         if img and not im_k:
             im_k = img[:, 1, ...].contiguous()
 
-        # PR - TODO randomly swap im_q and im_k here
-
         # compute query features
-        # TODO here is where we use init_module
         if self.input_module_q is not None:
             im_q = self.input_module_q(im_q)
         if self.input_module_k is not None:
             im_k = self.input_module_k(im_k)
+
+        # use images from both source in key and query
+        half_bsz = im_q.shape[0]//2
+        all_ims_qk = torch.cat([im_q[:half_bsz, ...], im_k[half_bsz:, ...]], dim=0)
+        all_ims_kq = torch.cat([im_k[:half_bsz, ...], im_q[half_bsz:, ...]], dim=0)
+        im_q = all_ims_qk
+        im_k = all_ims_kq
+
+        # randomly swap q and k  to avoid alignment bias
+        if torch.rand(1).item() < 0.5:
+            tmp = im_k
+            im_k = im_q
+            im_k = tmp
 
         q = self.encoder_q(im_q)[0]  # queries: NxC
         q = nn.functional.normalize(q, dim=1)
