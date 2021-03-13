@@ -66,8 +66,9 @@ def main():
 
     cfg = Config.fromfile(args.config)
 
-    wandb.init(config=cfg.model)
-    wandb.config.update(cfg.data)
+    if args.local_rank == 0:
+        wandb.init(config=cfg.model)
+        wandb.config.update(cfg.data)
 
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
@@ -78,7 +79,6 @@ def main():
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
     cfg.gpus = args.gpus
-
     # check memcached package exists
     if importlib.util.find_spec('mc') is None:
         traverse_replace(cfg, 'memcached', False)
@@ -132,8 +132,9 @@ def main():
         assert isinstance(args.pretrained, str)
         cfg.model.pretrained = args.pretrained
     model = build_model(cfg.model)
+    if args.local_rank == 0:
+        print(model)
     if args.debug:
-        # TODO(cjrd) fix this hardcoding?
         logger.info(
             "DEBUGGING enabled, setting batch size to 64 to allow 1 gpu debugging")
         cfg.data.batch_size = 64
@@ -147,7 +148,9 @@ def main():
         cfg.checkpoint_config.meta = dict(
             openselfsup_version=__version__, config=cfg.text)
 
-    wandb.watch(model)
+    if args.local_rank == 0:
+        wandb.watch(model)
+
     # add an attribute for visualization convenience
     train_model(
         model,

@@ -131,7 +131,7 @@ class Sen12MSImageList(object):
 
         # [todo:tg] temp hard code
         self.samples = []
-        path = "/storage/sen12ms_x/"
+        path = "data/sen12ms/data"
         for s2_id in self.fns:
             s2_id = os.path.basename(s2_id)
             mini_name = s2_id.split("_")
