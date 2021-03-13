@@ -34,7 +34,8 @@ data_source_cfg = dict(
     type='Sen12MS',
     memcached=False,
     mclient_path='/mnt/lustre/share/memcached_client')
-data_train_list = 'data/sen12ms/meta/small_sample.txt'
+dataset_name = "252_samples"
+data_train_list = f'data/sen12ms/meta/{dataset_name}.txt'
 data_train_root = 'data/sen12ms/data'
 dataset_type = 'ContrastiveMSDataset'
 # img_norm_cfg = dict(mean=[0.368, 0.381, 0.3436], std=[0.2035, 0.1854, 0.1849])
@@ -89,6 +90,7 @@ data = dict(
         type=dataset_type,
         data_source=dict(
             list_file=data_train_list, root=data_train_root,
+            name=dataset_name,
             **data_source_cfg),
         pipeline=train_pipeline))
 # optimizer
