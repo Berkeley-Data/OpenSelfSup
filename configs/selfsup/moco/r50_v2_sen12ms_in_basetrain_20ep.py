@@ -34,7 +34,7 @@ data_source_cfg = dict(
     type='Sen12MS',
     memcached=False,
     mclient_path='/mnt/lustre/share/memcached_client')
-data_train_list = 'data/sen12ms/meta/full_samples.txt'
+data_train_list = 'data/sen12ms/meta/small_sample.txt'
 data_train_root = 'data/sen12ms/data'
 dataset_type = 'ContrastiveMSDataset'
 # img_norm_cfg = dict(mean=[0.368, 0.381, 0.3436], std=[0.2035, 0.1854, 0.1849])
