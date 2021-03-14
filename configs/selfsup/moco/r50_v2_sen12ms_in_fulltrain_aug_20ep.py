@@ -34,7 +34,7 @@ data_source_cfg = dict(
     type='Sen12MS',
     memcached=False,
     mclient_path='/mnt/lustre/share/memcached_client')
-dataset_name = "35k_samples"
+dataset_name = "180k_samples"
 data_train_list = f'data/sen12ms/meta/{dataset_name}.txt'
 data_train_root = 'data/sen12ms/data'
 dataset_type = 'ContrastiveMSDataset'
@@ -79,6 +79,17 @@ train_pipeline = [
     #     ],
     #     p=0.5),
     # dict(type='RandomHorizontalFlip'),
+
+    # TODO: Fix the following
+    # dict(type='Alb_RandomCrop'),
+    # dict(type='Alb_ColorJitter'),
+
+    dict(type='Alb_GaussianBlur'),
+    dict(type='Alb_ElasticTransform'),
+    dict(type='Alb_Blur'),
+    dict(type='Alb_VerticalFlip'),
+    dict(type='Alb_HorizontalFlip'),
+    dict(type='Alb_RandomBrightnessContrast'),
     dict(type='Sen12msToTensor'),
     dict(type='Sen12msNormalize', **img_norm_cfg),
 ]
