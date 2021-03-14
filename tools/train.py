@@ -69,6 +69,7 @@ def main():
     if args.local_rank == 0:
         wandb.init(config=cfg.model)
         wandb.config.update(cfg.data)
+        wandb.config.update({"pipelines": ','.join([p.type for p in cfg.data.train.pipeline])})
 
     # set cudnn_benchmark
     if cfg.get('cudnn_benchmark', False):
