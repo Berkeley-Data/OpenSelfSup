@@ -13,3 +13,5 @@ future
 tqdm
 albumentations
 wandb
+rasterio
+pandas
