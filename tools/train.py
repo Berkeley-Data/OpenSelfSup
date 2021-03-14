@@ -75,7 +75,10 @@ def main():
     if cfg.get('cudnn_benchmark', False):
         torch.backends.cudnn.benchmark = True
     # update configs according to CLI args
-    if args.work_dir is not None:
+    if wandb.run.dir is not None:
+        # save to wandb run dir for tracking and saving the models
+        cfg.work_dir = wandb.run.dir
+    elif args.work_dir is not None:
         cfg.work_dir = args.work_dir
     if args.resume_from is not None:
         cfg.resume_from = args.resume_from
