@@ -23,8 +23,7 @@ def main():
         ck = torch.load(checkpoint, map_location=torch.device('cpu'))
     else:
         # if not checkpoint is not valid path, check for wandb
-        projectid = "hpt2"
-        restored_model = wandb.restore('latest.pth', run_path=f"{projectid}/{checkpoint}", replace=False)
+        restored_model = wandb.restore('latest.pth', run_path=f"{checkpoint}", replace=False)
         if restored_model is None:
             raise Exception(f"failed to load the model from runid or path: {checkpoint} ")
         ck = torch.load(restored_model.name, map_location=torch.device('cpu'))
