@@ -1,13 +1,11 @@
 import rasterio
 import numpy as np
 import matplotlib.pyplot as plt
-import wandb
 import torch
 
-# Add sample images to wandb
 # By default, it assumes that the data provided is imgae pixes and not the image file path
 # Send 'is_pixel_data = False' if image paths are sent
-def add_images_to_wandb(s1_data, s2_data, title='Sample Satellite images', is_pixel_data = True):
+def read_msi_as_plt(s1_data, s2_data, is_pixel_data = True):
 
     if not is_pixel_data:
         # Consider it as image file path
@@ -92,6 +90,5 @@ def add_images_to_wandb(s1_data, s2_data, title='Sample Satellite images', is_pi
     plt.grid(False)
     plt.title('S2 - RGB', fontsize=12, color='black')
 
-    # Log plot object
-    wandb.log({title: plt})
-    print("Added images to wandb")
+    return plt
+

@@ -7,8 +7,9 @@ from openselfsup.utils import print_log
 
 from . import builder
 from .registry import MODELS
-from openselfsup.datasets import wandb_utils
+from openselfsup.datasets import viz_utils
 import random
+import wandb
 
 # TODO(cjrd) use this across all classes?
 
@@ -35,14 +36,13 @@ class BaseModel(nn.Module):
         try:
             # Here nimg represents a batch (default 64)
             if train_images_sent_to_wandb == False:
-                images_title = 'Images during train step'
                 rand_index = random.randint(0, nimg - 1)
                 # The image data we get is a torch.Tensor
                 # Type of data['img_q'].data[rand_index]:  <class 'torch.Tensor'> Shape is  torch.Size([10, 256, 256])
                 # Type of data['img_k'].data[rand_index]:  <class 'torch.Tensor'> Shape is  torch.Size([2, 256, 256])
-                wandb_utils.add_images_to_wandb(data['img_k'].data[rand_index], data['img_q'].data[rand_index], title=images_title)
+                plt = viz_utils.read_msi_as_plt(data['img_k'].data[rand_index], data['img_q'].data[rand_index])
+                wandb.log({'Images during train step': plt})
                 train_images_sent_to_wandb = True
-                print(f"Added {images_title}")
 
         except Exception as e: print(e)
 
