@@ -6,8 +6,6 @@ import random
 import rasterio
 import numpy as np
 from tqdm import tqdm
-from openselfsup.datasets import wandb_utils
-
 
 # indices of sentinel-2 bands related to land
 S2_BANDS_LD = [2, 3, 4, 5, 6, 7, 8, 9, 12, 13]
