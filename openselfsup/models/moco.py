@@ -7,9 +7,13 @@ from openselfsup.utils import print_log
 
 from . import builder
 from .registry import MODELS
+from openselfsup.datasets import viz_utils
+import random
+import wandb
 
 # TODO(cjrd) use this across all classes?
 
+train_images_sent_to_wandb = False
 
 class BaseModel(nn.Module):
     def __init__(self):
@@ -26,6 +30,25 @@ class BaseModel(nn.Module):
             nimg = len(data['img'].data)
         else:
             nimg = len(data['img_q'].data)
+
+        # Send a random image pair to wandb within this batch
+
+        # The following is commented out as the data shape is the same as that the one are showing in wandb after the pipeline
+        # global train_images_sent_to_wandb
+        # try:
+        #     # Here nimg represents a batch (default 64)
+        #     if train_images_sent_to_wandb == False:
+        #         rand_index = random.randint(0, nimg - 1)
+        #         # The image data we get is a torch.Tensor
+        #         # Type of data['img_q'].data[rand_index]:  <class 'torch.Tensor'> Shape is  torch.Size([10, 256, 256])
+        #         # Type of data['img_k'].data[rand_index]:  <class 'torch.Tensor'> Shape is  torch.Size([2, 256, 256])
+        #
+        #         plt = viz_utils.read_msi_as_plt(data['img_k'].data[rand_index], data['img_q'].data[rand_index])
+        #         wandb.log({'Images during train step': plt})
+        #         train_images_sent_to_wandb = True
+        #
+        # except Exception as e: print(e)
+
         outputs = dict(loss=loss, log_vars=log_vars,
                        num_samples=nimg)
         return outputs

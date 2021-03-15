@@ -4,6 +4,11 @@ from .registry import DATASETS
 from .base import BaseDataset
 from .utils import to_numpy
 from .sen12ms_dataset import Sen12msDataset
+from openselfsup.datasets import viz_utils
+import wandb
+
+initial_images_sent_to_wandb = False
+pipeline_images_sent_to_wandb = False
 
 @DATASETS.register_module
 class ContrastiveDataset(BaseDataset):
@@ -49,9 +54,29 @@ class ContrastiveMSDataset(Sen12msDataset):
         #     'The output from the data source must be an Image, got: {}. \
         #     Please ensure that the list file does not contain labels.'.format(
         #     type(img1))
+
+        # Commented the following as we don't need images before the pipeline. If we want, we can enable during debugging.
+        # global initial_images_sent_to_wandb
+        # try:
+        #     if initial_images_sent_to_wandb == False:
+        #         plt = viz_utils.read_msi_as_plt(s1_img, s2_img)
+        #         wandb.log({'Images before pipeline': plt})
+        #         initial_images_sent_to_wandb = True
+        # except Exception as e: print(e)
+
         s1_img = self.pipeline(s1_img)
         s2_img = self.pipeline(s2_img)
-        
+
+        global pipeline_images_sent_to_wandb
+        try:
+            if pipeline_images_sent_to_wandb == False:
+                images_title = 'Images after pipeline'
+                plt = viz_utils.read_msi_as_plt(s1_img, s2_img)
+                wandb.log({'Images after pipeline': plt})
+                pipeline_images_sent_to_wandb = True
+        except Exception as e: print(e)
+
+
         # Colorado: I would suggest to not mess with prefetch -- it's unstable with OpenSelfSup
         # if self.prefetch:
         #     s1_img = torch.from_numpy(to_numpy(s1_img))

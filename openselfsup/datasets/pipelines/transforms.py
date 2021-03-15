@@ -2,7 +2,7 @@ import cv2
 import inspect
 import numpy as np
 from PIL import Image, ImageFilter
-
+import albumentations as A
 
 import torch
 from torchvision import transforms as _transforms
@@ -16,6 +16,149 @@ _EXCLUDED_TRANSFORMS = ['GaussianBlur']
 for m in inspect.getmembers(_transforms, inspect.isclass):
     if m[0] not in _EXCLUDED_TRANSFORMS:
         PIPELINES.register_module(m[1])
+
+
+@PIPELINES.register_module
+class Alb_ColorJitter(object):
+
+    def __call__(self, img):
+        # TODO: Fix the code
+        transform = A.Compose([
+            A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.2, always_apply=False, p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+
+@PIPELINES.register_module
+class Alb_RandomCrop(object):
+
+    def __call__(self, img):
+
+        # TODO: Fix the code
+        transform = A.Compose([
+            A.RandomCrop(width=196, height=196),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+
+@PIPELINES.register_module
+class Alb_GaussianBlur(object):
+
+    def __call__(self, img):
+
+        transform = A.Compose([
+            A.GaussianBlur (blur_limit=(3, 7), sigma_limit=0, always_apply=False, p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+
+@PIPELINES.register_module
+class Alb_RandomBrightnessContrast(object):
+
+    def __call__(self, img):
+
+        transform = A.Compose([
+            A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, always_apply=False, p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+
+@PIPELINES.register_module
+class Alb_ElasticTransform(object):
+
+    def __call__(self, img):
+
+        transform = A.Compose([
+            A.ElasticTransform(alpha=1, sigma=50, alpha_affine=50, interpolation=1, border_mode=4, always_apply=False, p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+
+@PIPELINES.register_module
+class Alb_Blur(object):
+
+    def __call__(self, img):
+
+        transform = A.Compose([
+            A.Blur(blur_limit=7, always_apply=False, p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+@PIPELINES.register_module
+class Alb_VerticalFlip(object):
+
+    def __call__(self, img):
+
+        transform = A.Compose([
+            A.VerticalFlip(p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
+
+@PIPELINES.register_module
+class Alb_HorizontalFlip(object):
+
+    def __call__(self, img):
+
+        transform = A.Compose([
+            A.HorizontalFlip(p=0.5),
+        ])
+        # Augment an image
+        transformed = transform(image=img)
+        transformed_image = transformed["image"]
+        return transformed_image
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        return repr_str
 
 
 @PIPELINES.register_module
