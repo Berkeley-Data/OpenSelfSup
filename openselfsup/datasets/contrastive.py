@@ -4,7 +4,8 @@ from .registry import DATASETS
 from .base import BaseDataset
 from .utils import to_numpy
 from .sen12ms_dataset import Sen12msDataset
-from openselfsup.datasets import wandb_utils
+from openselfsup.datasets import viz_utils
+import wandb
 
 initial_images_sent_to_wandb = False
 pipeline_images_sent_to_wandb = False
@@ -58,10 +59,9 @@ class ContrastiveMSDataset(Sen12msDataset):
         # global initial_images_sent_to_wandb
         # try:
         #     if initial_images_sent_to_wandb == False:
-        #         images_title = 'Images before pipeline'
-        #         wandb_utils.add_images_to_wandb(s1_img, s2_img, title=images_title)
+        #         plt = viz_utils.read_msi_as_plt(s1_img, s2_img)
+        #         wandb.log({'Images before pipeline': plt})
         #         initial_images_sent_to_wandb = True
-        #         print(f"Added {images_title}")
         # except Exception as e: print(e)
 
         s1_img = self.pipeline(s1_img)
@@ -71,9 +71,9 @@ class ContrastiveMSDataset(Sen12msDataset):
         try:
             if pipeline_images_sent_to_wandb == False:
                 images_title = 'Images after pipeline'
-                wandb_utils.add_images_to_wandb(s1_img, s2_img, title=images_title)
+                plt = viz_utils.read_msi_as_plt(s1_img, s2_img)
+                wandb.log({'Images after pipeline': plt})
                 pipeline_images_sent_to_wandb = True
-                print(f"Added {images_title}")
         except Exception as e: print(e)
 
 
