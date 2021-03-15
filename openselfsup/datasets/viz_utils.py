@@ -17,7 +17,7 @@ def read_msi_as_plt(s1_data, s2_data, is_pixel_data = True):
     if type(s1_data) == torch.Tensor:
         s1_data = s1_data.cpu().detach().numpy()
 
-    print("s1_data shape ", s1_data.shape)
+    # print("s1_data shape ", s1_data.shape)
     ni = s1_data.shape[0]
     fig = plt.figure(figsize=(20, 15))
 
@@ -42,7 +42,7 @@ def read_msi_as_plt(s1_data, s2_data, is_pixel_data = True):
     if type(s2_data) == torch.Tensor:
         s2_data = s2_data.cpu().detach().numpy()
 
-    print("s2_data shape ", s2_data.shape)
+    # print("s2_data shape ", s2_data.shape)
     ni = s2_data.shape[0]
     # For S2 bands used during processing [2, 3, 4, 5, 6, 7, 8, 9, 12, 13]
     for i in range(ni):
