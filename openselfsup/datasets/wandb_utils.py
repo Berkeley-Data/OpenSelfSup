@@ -15,12 +15,12 @@ def add_images_to_wandb(s1_data, s2_data, title='Sample Satellite images', is_pi
         image_sequence = imf.read()
         # Convert to pixel data
         s1_data = np.array(image_sequence)
-    print("s1_data shape ", s1_data.shape)
-    print("type ", type(s1_data))
+    #print("s1_data shape ", s1_data.shape)
+    #print("type ", type(s1_data))
     if type(s1_data) == torch.Tensor:
-        print("type ", type(s1_data))
+        #print("type ", type(s1_data))
         s1_data = s1_data.cpu().detach().numpy()
-        print("s1_data shape after tensor permute", s1_data.shape)
+        #print("s1_data shape after tensor to numpy", s1_data.shape)
 
     ni = s1_data.shape[0]
     fig = plt.figure(figsize=(20, 15))
@@ -42,12 +42,12 @@ def add_images_to_wandb(s1_data, s2_data, title='Sample Satellite images', is_pi
         image_sequence = imf.read()
         # Convert to pixel data
         s2_data = np.array(image_sequence)
-    print("s2_data shape ", s2_data.shape)
-    print("type ", type(s2_data))
+    #print("s2_data shape ", s2_data.shape)
+    #print("type ", type(s2_data))
     if type(s2_data) == torch.Tensor:
-        print("type ", type(s2_data))
+        #print("type ", type(s2_data))
         s2_data = s2_data.cpu().detach().numpy()
-        print("s2_data shape after tensor permute", s2_data.shape)
+        #print("s2_data shape after tensor permute", s2_data.shape)
 
     ni = s2_data.shape[0]
     # For S2 bands used during processing [2, 3, 4, 5, 6, 7, 8, 9, 12, 13]
