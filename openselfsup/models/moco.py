@@ -7,9 +7,12 @@ from openselfsup.utils import print_log
 
 from . import builder
 from .registry import MODELS
+from openselfsup.datasets import wandb_utils
+import random
 
 # TODO(cjrd) use this across all classes?
 
+train_images_sent_to_wandb = False
 
 class BaseModel(nn.Module):
     def __init__(self):
@@ -26,6 +29,23 @@ class BaseModel(nn.Module):
             nimg = len(data['img'].data)
         else:
             nimg = len(data['img_q'].data)
+
+        # Send a random image pair to wandb within this batch
+        global train_images_sent_to_wandb
+        try:
+            # Here nimg represents a batch (default 64)
+            if train_images_sent_to_wandb == False:
+                images_title = 'Images during train step'
+                rand_index = random.randint(0, nimg - 1)
+                # The image data we get is a torch.Tensor
+                # Type of data['img_q'].data[rand_index]:  <class 'torch.Tensor'> Shape is  torch.Size([10, 256, 256])
+                # Type of data['img_k'].data[rand_index]:  <class 'torch.Tensor'> Shape is  torch.Size([2, 256, 256])
+                wandb_utils.add_images_to_wandb(data['img_k'].data[rand_index], data['img_q'].data[rand_index], title=images_title)
+                train_images_sent_to_wandb = True
+                print(f"Added {images_title}")
+
+        except Exception as e: print(e)
+
         outputs = dict(loss=loss, log_vars=log_vars,
                        num_samples=nimg)
         return outputs

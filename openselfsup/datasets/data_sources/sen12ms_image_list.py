@@ -1,23 +1,12 @@
-import os
-from PIL import Image
-
 from ..registry import DATASOURCES
 from .utils import McLoader
-from torchvision import transforms as _transforms
-
 
 import os
-from os import walk
-import glob
 import random
 import rasterio
 import numpy as np
-import pandas as pd
-import pickle as pkl
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import wandb
-
+from openselfsup.datasets import wandb_utils
 
 
 # indices of sentinel-2 bands related to land
@@ -99,52 +88,6 @@ def get_ninputs(use_s1, use_s2, use_RGB):
 
     return n_inputs
 
-# Add sample images to wandb
-def add_images_to_wandb(s1_path, s2_path):
-    imf = rasterio.open(s1_path)
-    image_sequence = imf.read()
-    image_array = np.array(image_sequence)
-    ni = image_array.shape[0]
-    fig = plt.figure(figsize=(20, 15))
-
-    for i in range(ni):
-        plt.subplots_adjust(hspace=.2)
-        plt.subplot(4, 5, i + 1)
-        plt.imshow(image_array[i], interpolation='nearest', cmap='gray')
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(False)
-        plt.title('S1 - band ' + str(i + 1), fontsize=12, color='black')
-
-    imf = rasterio.open(s2_path)
-    image_sequence = imf.read()
-    image_array = np.array(image_sequence)
-    ni = image_array.shape[0]
-    for i in range(ni):
-        plt.subplots_adjust(hspace=.2)
-        plt.subplot(4, 5, 5 + (i + 1))
-        plt.imshow(image_array[i], interpolation='nearest', cmap='gray')
-        plt.xticks([])
-        plt.yticks([])
-        plt.grid(False)
-        plt.title('S2 - band ' + str(i + 1), fontsize=12, color='black')
-
-    # S2 bands 4,3,2 correspond to RGB
-    rgbArray = np.zeros((256, 256, 3), 'uint8')
-    rgbArray[..., 0] = 255.0 * (image_array[3] - image_array[3].min()) / (image_array[3].max() - image_array[3].min())
-    rgbArray[..., 1] = 255.0 * (image_array[2] - image_array[2].min()) / (image_array[2].max() - image_array[2].min())
-    rgbArray[..., 2] = 255.0 * (image_array[1] - image_array[1].min()) / (image_array[1].max() - image_array[1].min())
-    plt.subplots_adjust(hspace=.2)
-    plt.subplot(4, 5, 19)
-    plt.imshow(rgbArray, interpolation='nearest', cmap='gray')
-    plt.xticks([])
-    plt.yticks([])
-    plt.grid(False)
-    plt.title('S2 - RGB', fontsize=12, color='black')
-
-    # Log plot object
-    wandb.log({"Sample Satellite images": plt})
-    print("Added sample images to wandb")
 
 @DATASOURCES.register_module
 class Sen12MSImageList(object):
@@ -198,14 +141,17 @@ class Sen12MSImageList(object):
         # sort list of samples
         self.samples = sorted(self.samples, key=lambda i: i['id'])
         print(f"loaded {len(self.samples)} from {path}")
-        try:
 
-            rand_index = random.randint(0, len(self.samples)-1)
-            sample_data = self.samples[rand_index]
-            add_images_to_wandb(sample_data["s1"], sample_data["s2"])
-            print(f"Added a random sample images from index {rand_index} to wandb")
-        except Exception as e:
-            print(e)
+        # Commented the following as we don't need images at this stage. If we want, we can enable during debugging.
+        # try:
+        #     rand_index = random.randint(0, len(self.samples)-1)
+        #     sample_data = self.samples[rand_index]
+        #     images_title = 'Sample images during loading'
+        #     wandb_utils.add_images_to_wandb(sample_data["s1"], sample_data["s2"],title=images_title, is_pixel_data=False)
+        #     print(f"Added {images_title} from index {rand_index} to wandb")
+        #
+        # except Exception as e:
+        #     print(e)
 
         self.fns = self.samples
 
