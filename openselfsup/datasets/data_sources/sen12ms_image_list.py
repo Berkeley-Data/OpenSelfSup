@@ -1,20 +1,12 @@
-import os
-from PIL import Image
-
 from ..registry import DATASOURCES
 from .utils import McLoader
-from torchvision import transforms as _transforms
-
 
 import os
-from os import walk
-import glob
 import random
 import rasterio
 import numpy as np
-import pandas as pd
-import pickle as pkl
 from tqdm import tqdm
+from openselfsup.datasets import wandb_utils
 
 
 # indices of sentinel-2 bands related to land
@@ -131,6 +123,7 @@ class Sen12MSImageList(object):
 
         # [todo:tg] temp hard code
         self.samples = []
+
         path = "data/sen12ms/data"
         for s2_id in self.fns:
             s2_id = os.path.basename(s2_id)
@@ -149,7 +142,19 @@ class Sen12MSImageList(object):
         self.samples = sorted(self.samples, key=lambda i: i['id'])
         print(f"loaded {len(self.samples)} from {path}")
 
+        # Commented the following as we don't need images at this stage. If we want, we can enable during debugging.
+        # try:
+        #     rand_index = random.randint(0, len(self.samples)-1)
+        #     sample_data = self.samples[rand_index]
+        #     images_title = 'Sample images during loading'
+        #     wandb_utils.add_images_to_wandb(sample_data["s1"], sample_data["s2"],title=images_title, is_pixel_data=False)
+        #     print(f"Added {images_title} from index {rand_index} to wandb")
+        #
+        # except Exception as e:
+        #     print(e)
+
         self.fns = self.samples
+
 
 
     def _init_memcached(self):

@@ -11,3 +11,8 @@ faiss-gpu==1.6.1
 tensorboard
 future
 tqdm
+albumentations
+wandb
+rasterio
+pandas
+matplotlib
